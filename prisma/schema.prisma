@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Company {
+  id                String    @id @default(uuid())
+  companyName       String
+  businessEmail     String    @unique
+  password          String
+  isEmailVerified   Boolean   @default(false)
+  emailOtp          String?
+  emailOtpExpiresAt DateTime?
+  webhookSecret     String?   @unique
+  isWebhookActive   Boolean   @default(false)
+  kycStatus         String    @default("PENDING")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  kycInfo       KycInfo?
+  orders        Order[]
+}
+
+model KycInfo {
+  id                     String    @id @default(uuid())
+  companyId              String    @unique
+  businessRegistrationNo String
+  businessAddress        String
+  contactPersonName      String
+  contactPersonPhone     String
+  reviewedBy             String?
+  reviewNotes            String?
+  reviewedAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  companyId       String
+  externalOrderId String
+  customerEmail   String
+  customerPhone   String?
+  itemSummary     String
+  deliveryAddress String
+  currentStatus   String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  statusHistory StatusHistory[]
+  notifications Notification[]
+  
+  @@unique([companyId, externalOrderId])
+  @@index([companyId])
+  @@index([customerEmail])
+}
+
+model StatusHistory {
+  id        String   @id @default(uuid())
+  orderId   String
+  status    String
+  note      String?
+  timestamp DateTime @default(now())
+  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  orderId   String
+  type      String
+  recipient String
+  subject   String
+  body      String
+  status    String    @default("PENDING")
+  sentAt    DateTime?
+  failedAt  DateTime?
+  errorMsg  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([status])
+}

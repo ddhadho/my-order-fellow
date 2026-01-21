@@ -71,7 +71,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid OTP');
     }
 
-    if (new Date() > company.emailOtpExpiresAt) {
+    if (!company.emailOtpExpiresAt || new Date() > company.emailOtpExpiresAt) {
       throw new UnauthorizedException('OTP expired');
     }
 

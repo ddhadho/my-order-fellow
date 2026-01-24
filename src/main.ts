@@ -18,11 +18,31 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('My Order Fellow API')
+    .setDescription('SaaS platform for real-time order tracking')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-Webhook-Secret',
+        in: 'header',
+        description:
+          'Webhook secret key for e-commerce platform authentication',
+      },
+      'webhook-secret',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
@@ -30,8 +50,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  console.log(`API running on http://localhost:${port}`);
-  console.log(`Docs available at http://localhost:${port}/api/docs`);
+  console.log(`🚀 API running on http://localhost:${port}`);
+  console.log(`📚 Docs available at http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

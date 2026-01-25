@@ -107,4 +107,33 @@ export class EmailService {
       </html>
     `;
   }
+
+  async sendTestEmail(to: string) {
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+            body { font-family: Arial, sans-serif; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        </style>
+        </head>
+        <body>
+        <div class="container">
+            <div class="header">
+            <h1>✅ Email Configuration Test</h1>
+            </div>
+            <div style="padding: 20px;">
+            <p>This is a test email from My Order Fellow.</p>
+            <p>If you're reading this, your email configuration is working correctly!</p>
+            <p><strong>Sent at:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+        </div>
+        </body>
+        </html>
+    `;
+
+    return this.sendEmail(to, 'My Order Fellow - Email Test', html);
+  }
 }

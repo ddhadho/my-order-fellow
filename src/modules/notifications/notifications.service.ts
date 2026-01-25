@@ -114,4 +114,21 @@ export class NotificationsService {
       `Successfully retried ${successCount}/${failed.length} notifications`,
     );
   }
+
+  async getNotificationHistory(orderId: string) {
+    return this.prisma.notification.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        recipient: true,
+        status: true,
+        sentAt: true,
+        failedAt: true,
+        errorMsg: true,
+        createdAt: true,
+      },
+    });
+  }
 }

@@ -1,10 +1,14 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class WebhooksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async processOrderWebhook(companyId: string, orderDto: CreateOrderDto) {
     // Check for duplicate order (idempotency)
@@ -47,6 +51,13 @@ export class WebhooksService {
     });
 
     console.log(`✅ Order created: ${order.externalOrderId}`);
+
+    // Send tracking activated notification (async, don't block response)
+    this.notifications
+      .sendTrackingActivatedNotification(order.id)
+      .catch((err) =>
+        console.error('Failed to send tracking notification:', err),
+      );
 
     return {
       success: true,
@@ -99,6 +110,17 @@ export class WebhooksService {
     console.log(
       `✅ Order ${order.externalOrderId} updated to ${updateDto.newStatus}`,
     );
+
+    // Send status update notification (async, don't block response)
+    this.notifications
+      .sendStatusUpdateNotification(
+        updatedOrder.id,
+        updateDto.newStatus,
+        updateDto.note,
+      )
+      .catch((err) =>
+        console.error('Failed to send status update notification:', err),
+      );
 
     return {
       success: true,

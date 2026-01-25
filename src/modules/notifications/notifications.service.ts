@@ -39,14 +39,22 @@ export class NotificationsService {
     });
   }
 
-  async sendStatusUpdateNotification(orderId: string, newStatus: string, note?: string) {
+  async sendStatusUpdateNotification(
+    orderId: string,
+    newStatus: string,
+    note?: string,
+  ) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
     });
 
     if (!order) return;
 
-    const html = this.emailService.generateStatusUpdateEmail(order, newStatus, note);
+    const html = this.emailService.generateStatusUpdateEmail(
+      order,
+      newStatus,
+      note,
+    );
     const result = await this.emailService.sendEmail(
       order.customerEmail,
       `Order ${order.externalOrderId} - Status Update`,
@@ -66,5 +74,44 @@ export class NotificationsService {
         errorMsg: result.error || null,
       },
     });
+  }
+
+  async retryFailedNotifications() {
+    const failed = await this.prisma.notification.findMany({
+      where: {
+        status: 'FAILED',
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+        },
+      },
+      include: {
+        order: true,
+      },
+    });
+
+    console.log(`Retrying ${failed.length} failed notifications...`);
+
+    for (const notification of failed) {
+      const result = await this.emailService.sendEmail(
+        notification.recipient,
+        notification.subject,
+        notification.body,
+      );
+
+      await this.prisma.notification.update({
+        where: { id: notification.id },
+        data: {
+          status: result.success ? 'SENT' : 'FAILED',
+          sentAt: result.success ? new Date() : null,
+          failedAt: result.success ? null : new Date(),
+          errorMsg: result.error || null,
+        },
+      });
+    }
+
+    const successCount = failed.filter((n) => n.status === 'SENT').length;
+    console.log(
+      `Successfully retried ${successCount}/${failed.length} notifications`,
+    );
   }
 }

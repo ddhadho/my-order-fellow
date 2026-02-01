@@ -1,12 +1,8 @@
+import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  ConflictException,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service'; // Keep original import for type hinting
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 // Mock bcrypt
@@ -17,16 +13,18 @@ describe('AuthService', () => {
   let prisma: PrismaService;
   let jwtService: JwtService;
 
-  const mockPrismaService = {
+  const mockJwtService = {
+    sign: jest.fn(),
+  };
+
+    const mockPrismaService = {
     company: {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
-  };
-
-  const mockJwtService = {
-    sign: jest.fn(),
+    $transaction: jest.fn((cb) => cb(mockPrismaService)), // Mock transaction for `auth.service.ts`
+    // Add other Prisma models and methods as needed for mocking
   };
 
   beforeEach(async () => {
@@ -34,18 +32,18 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
-          provide: PrismaService,
+          provide: PrismaService, // Provide mock PrismaService
           useValue: mockPrismaService,
         },
         {
-          provide: JwtService,
+          provide: JwtService, // Provide mock JwtService
           useValue: mockJwtService,
         },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prisma = module.get<PrismaService>(PrismaService);
+    prisma = module.get<PrismaService>(PrismaService); // Get the mocked PrismaService
     jwtService = module.get<JwtService>(JwtService);
 
     jest.clearAllMocks();
@@ -74,9 +72,10 @@ describe('AuthService', () => {
         isEmailVerified: false,
       };
 
-      mockPrismaService.company.findUnique.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
-      mockPrismaService.company.create.mockResolvedValue(mockCompany);
+      // Mock PrismaService methods that AuthService calls
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword);
+      jest.spyOn(prisma.company, 'create').mockResolvedValue(mockCompany);
 
       const result = await service.register(registerDto);
 
@@ -85,13 +84,13 @@ describe('AuthService', () => {
         companyId: 'company-123',
       });
 
-      expect(mockPrismaService.company.findUnique).toHaveBeenCalledWith({
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
         where: { businessEmail: 'test@company.com' },
       });
 
       expect(bcrypt.hash).toHaveBeenCalledWith('SecurePass123!', 10);
 
-      expect(mockPrismaService.company.create).toHaveBeenCalledWith({
+      expect(prisma.company.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           companyName: 'Test Company',
           businessEmail: 'test@company.com',
@@ -103,7 +102,7 @@ describe('AuthService', () => {
     });
 
     it('should throw ConflictException if email already exists', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue({
         id: 'existing-company',
         businessEmail: 'test@company.com',
       });
@@ -115,15 +114,15 @@ describe('AuthService', () => {
         'Email already registered',
       );
 
-      expect(mockPrismaService.company.create).not.toHaveBeenCalled();
+      expect(prisma.company.create).not.toHaveBeenCalled();
     });
 
     it('should generate 6-digit OTP', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashed_password');
 
       let capturedOtp: string;
-      mockPrismaService.company.create.mockImplementation((data) => {
+      jest.spyOn(prisma.company, 'create').mockImplementation((data) => {
         capturedOtp = data.data.emailOtp;
         return Promise.resolve({ id: '123', ...data.data });
       });
@@ -136,11 +135,11 @@ describe('AuthService', () => {
     });
 
     it('should set OTP expiry to 10 minutes from now', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashed_password');
 
       let capturedExpiry: Date;
-      mockPrismaService.company.create.mockImplementation((data) => {
+      jest.spyOn(prisma.company, 'create').mockImplementation((data) => {
         capturedExpiry = data.data.emailOtpExpiresAt;
         return Promise.resolve({ id: '123', ...data.data });
       });
@@ -169,8 +168,8 @@ describe('AuthService', () => {
         emailOtpExpiresAt: new Date(Date.now() + 10 * 60 * 1000), // Future
       };
 
-      mockPrismaService.company.findUnique.mockResolvedValue(mockCompany);
-      mockPrismaService.company.update.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(mockCompany);
+      jest.spyOn(prisma.company, 'update').mockResolvedValue({
         ...mockCompany,
         isEmailVerified: true,
       });
@@ -181,7 +180,7 @@ describe('AuthService', () => {
         message: 'Email verified successfully',
       });
 
-      expect(mockPrismaService.company.update).toHaveBeenCalledWith({
+      expect(prisma.company.update).toHaveBeenCalledWith({
         where: { id: 'company-123' },
         data: {
           isEmailVerified: true,
@@ -192,7 +191,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if company not found', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue(null);
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(null);
 
       await expect(service.verifyOtp(verifyOtpDto)).rejects.toThrow(
         UnauthorizedException,
@@ -203,7 +202,7 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException if email already verified', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue({
         id: 'company-123',
         isEmailVerified: true,
       });
@@ -217,7 +216,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if OTP is invalid', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue({
         id: 'company-123',
         isEmailVerified: false,
         emailOtp: '123456',
@@ -239,7 +238,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if OTP is expired', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue({
         id: 'company-123',
         isEmailVerified: false,
         emailOtp: '123456',
@@ -271,8 +270,8 @@ describe('AuthService', () => {
         kycStatus: 'PENDING',
       };
 
-      mockPrismaService.company.findUnique.mockResolvedValue(mockCompany);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(mockCompany);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       mockJwtService.sign.mockReturnValue('jwt-token-123');
 
       const result = await service.login(loginDto);
@@ -287,7 +286,7 @@ describe('AuthService', () => {
         },
       });
 
-      expect(mockPrismaService.company.findUnique).toHaveBeenCalledWith({
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
         where: { businessEmail: 'test@company.com' },
       });
 
@@ -303,7 +302,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if company not found', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue(null);
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue(null);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -314,12 +313,12 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if password is invalid', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue({
         id: 'company-123',
         password: 'hashed_password',
         isEmailVerified: true,
       });
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -330,12 +329,12 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if email not verified', async () => {
-      mockPrismaService.company.findUnique.mockResolvedValue({
+      jest.spyOn(prisma.company, 'findUnique').mockResolvedValue({
         id: 'company-123',
         password: 'hashed_password',
         isEmailVerified: false,
       });
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,

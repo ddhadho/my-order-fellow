@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service'; // Import NotificationsService
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
   let prisma: PrismaService;
+  let notificationsService: NotificationsService; // Declare notificationsService
 
   const mockPrismaService = {
     order: {
@@ -17,6 +19,11 @@ describe('WebhooksService', () => {
     },
   };
 
+  const mockNotificationsService = {
+    sendTrackingActivatedNotification: jest.fn(() => Promise.resolve()), // Mock with Promise.resolve()
+    sendStatusUpdateNotification: jest.fn(() => Promise.resolve()), // Mock with Promise.resolve()
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -25,11 +32,16 @@ describe('WebhooksService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: NotificationsService, // Provide NotificationsService mock
+          useValue: mockNotificationsService,
+        },
       ],
     }).compile();
 
     service = module.get<WebhooksService>(WebhooksService);
     prisma = module.get<PrismaService>(PrismaService);
+    notificationsService = module.get<NotificationsService>(NotificationsService); // Get the mocked notificationsService
 
     // Clear mocks before each test
     jest.clearAllMocks();
@@ -102,6 +114,8 @@ describe('WebhooksService', () => {
           },
         },
       });
+
+      expect(mockNotificationsService.sendTrackingActivatedNotification).toHaveBeenCalledWith('order-uuid');
     });
 
     it('should return existing order if duplicate (idempotency)', async () => {
@@ -127,6 +141,7 @@ describe('WebhooksService', () => {
       });
 
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
+      expect(mockNotificationsService.sendTrackingActivatedNotification).not.toHaveBeenCalled();
     });
 
     it('should default to PENDING status if not provided', async () => {
@@ -151,6 +166,7 @@ describe('WebhooksService', () => {
           }),
         }),
       );
+      expect(mockNotificationsService.sendTrackingActivatedNotification).toHaveBeenCalledWith('order-uuid');
     });
   });
 
@@ -210,6 +226,12 @@ describe('WebhooksService', () => {
           },
         },
       });
+
+      expect(mockNotificationsService.sendStatusUpdateNotification).toHaveBeenCalledWith(
+        'order-uuid',
+        'IN_TRANSIT',
+        'Package departed warehouse',
+      );
     });
 
     it('should throw error if order not found', async () => {
@@ -224,6 +246,7 @@ describe('WebhooksService', () => {
       ).rejects.toThrow('Order ORD-12345 not found');
 
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+      expect(mockNotificationsService.sendStatusUpdateNotification).not.toHaveBeenCalled();
     });
 
     it('should skip update if status unchanged', async () => {
@@ -248,6 +271,7 @@ describe('WebhooksService', () => {
       });
 
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+      expect(mockNotificationsService.sendStatusUpdateNotification).not.toHaveBeenCalled();
     });
 
     it('should create status history without note if not provided', async () => {
@@ -283,6 +307,12 @@ describe('WebhooksService', () => {
           },
         },
       });
+
+      expect(mockNotificationsService.sendStatusUpdateNotification).toHaveBeenCalledWith(
+        'order-uuid',
+        'DELIVERED',
+        undefined,
+      );
     });
   });
 });

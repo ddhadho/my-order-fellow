@@ -77,7 +77,7 @@ export class NotificationsService {
   }
 
   async retryFailedNotifications() {
-    const failed = await this.prisma.notification.findMany({
+    const failedNotifications = await this.prisma.notification.findMany({
       where: {
         status: 'FAILED',
         createdAt: {
@@ -89,9 +89,14 @@ export class NotificationsService {
       },
     });
 
-    console.log(`Retrying ${failed.length} failed notifications...`);
+    console.log(`Retrying ${failedNotifications.length} failed notifications...`);
 
-    for (const notification of failed) {
+    let totalRetries = 0;
+    let successfulRetries = 0;
+    let failedRetries = 0;
+
+    for (const notification of failedNotifications) {
+      totalRetries++;
       const result = await this.emailService.sendEmail(
         notification.recipient,
         notification.subject,
@@ -107,12 +112,23 @@ export class NotificationsService {
           errorMsg: result.error || null,
         },
       });
+
+      if (result.success) {
+        successfulRetries++;
+      } else {
+        failedRetries++;
+      }
     }
 
-    const successCount = failed.filter((n) => n.status === 'SENT').length;
     console.log(
-      `Successfully retried ${successCount}/${failed.length} notifications`,
+      `Successfully retried ${successfulRetries}/${totalRetries} notifications`,
     );
+
+    return {
+      total: totalRetries,
+      success: successfulRetries,
+      failed: failedRetries,
+    };
   }
 
   async getNotificationHistory(orderId: string) {

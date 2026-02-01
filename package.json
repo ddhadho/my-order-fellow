@@ -20,15 +20,15 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "webhook:test": "ts-node scripts/send-test-webhook.ts",
     "webhook:secret": "ts-node scripts/get-webhook-secret.ts",
-    
+
     "email:test": "ts-node -r tsconfig-paths/register scripts/test-email.ts",
     "notifications:retry": "ts-node scripts/retry-notifications.ts",
 
-    "test:auth": "jest --testPathPattern=auth",
+    "test:auth": "jest --testPathPatterns=auth",
     "test:auth:unit": "jest auth.service.spec",
     "test:auth:e2e": "jest auth.e2e-spec --config ./test/jest-e2e.json",
 
-    "test:orders": "jest --testPathPattern=orders",
+    "test:orders": "jest --testPathPatterns=orders",
     "test:orders:unit": "jest orders.service.spec",
     "test:orders:e2e": "jest orders.e2e-spec --config ./test/jest-e2e.json"
   },

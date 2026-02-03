@@ -31,4 +31,3 @@ describe('KycController', () => {
     expect(controller).toBeDefined();
   });
 });
-

@@ -89,7 +89,9 @@ export class NotificationsService {
       },
     });
 
-    console.log(`Retrying ${failedNotifications.length} failed notifications...`);
+    console.log(
+      `Retrying ${failedNotifications.length} failed notifications...`,
+    );
 
     let totalRetries = 0;
     let successfulRetries = 0;

@@ -1,4 +1,8 @@
-import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service'; // Keep original import for type hinting
@@ -17,7 +21,7 @@ describe('AuthService', () => {
     sign: jest.fn(),
   };
 
-    const mockPrismaService = {
+  const mockPrismaService = {
     company: {
       findUnique: jest.fn(),
       create: jest.fn(),

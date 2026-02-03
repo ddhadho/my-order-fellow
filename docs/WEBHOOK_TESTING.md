@@ -22,12 +22,12 @@ npx ts-node scripts/get-webhook-secret.ts your-email@example.com
 
 **Output:**
 ```
-📋 Company Information:
+Company Information:
 Company: Test Corp
 KYC Status: APPROVED
 Webhook Active: true
 
-🔑 Webhook Secret:
+Webhook Secret:
 abc123def456...
 ```
 
@@ -78,10 +78,10 @@ npx ts-node scripts/send-test-webhook.ts
 
 ### Expected Output
 ```
-🚀 Starting webhook test...
+Starting webhook test...
 
-📦 Sending new order webhook...
-✅ Order webhook sent successfully:
+Sending new order webhook...
+Order webhook sent successfully:
 {
   "success": true,
   "orderId": "550e8400-e29b-41d4-a716-446655440000",
@@ -89,8 +89,8 @@ npx ts-node scripts/send-test-webhook.ts
   "message": "Order received and tracking activated"
 }
 
-🔄 Sending status update webhook...
-✅ Status update sent successfully:
+Sending status update webhook...
+Status update sent successfully:
 {
   "success": true,
   "orderId": "550e8400-e29b-41d4-a716-446655440000",
@@ -99,7 +99,7 @@ npx ts-node scripts/send-test-webhook.ts
   "message": "Status updated successfully"
 }
 
-✅ Full order lifecycle simulated successfully!
+Full order lifecycle simulated successfully!
 ```
 
 ---
@@ -390,10 +390,10 @@ send_order({
 ## Next Steps
 
 After successful webhook testing:
-1. ✅ Verify orders appear in database
-2. ✅ Check status history is created
-3. ✅ Test with your actual e-commerce platform
-4. ✅ Move to Phase 5 (Notifications) to send emails to customers
+1. Verify orders appear in database
+2. Check status history is created
+3. Test with your actual e-commerce platform
+4. Move to Phase 5 (Notifications) to send emails to customers
 
 ---
 

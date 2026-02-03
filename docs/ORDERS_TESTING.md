@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- ✅ Application running: `npm run start:dev`
-- ✅ JWT token from login (for protected endpoints)
-- ✅ At least one order created via webhooks
+- Application running: `npm run start:dev`
+- JWT token from login (for protected endpoints)
+- At least one order created via webhooks
 
 ---
 
@@ -366,7 +366,7 @@ LIMIT 5;
 ## Next Steps
 
 After testing order endpoints:
-1. ✅ Build frontend dashboard using these APIs
-2. ✅ Create customer tracking page
-3. ✅ Add export functionality (CSV/PDF)
-4. ✅ Implement advanced analytics
+1. Build frontend dashboard using these APIs
+2. Create customer tracking page
+3. Add export functionality (CSV/PDF)
+4. Implement advanced analytics

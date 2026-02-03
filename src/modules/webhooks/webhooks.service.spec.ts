@@ -41,7 +41,8 @@ describe('WebhooksService', () => {
 
     service = module.get<WebhooksService>(WebhooksService);
     prisma = module.get<PrismaService>(PrismaService);
-    notificationsService = module.get<NotificationsService>(NotificationsService); // Get the mocked notificationsService
+    notificationsService =
+      module.get<NotificationsService>(NotificationsService); // Get the mocked notificationsService
 
     // Clear mocks before each test
     jest.clearAllMocks();
@@ -115,7 +116,9 @@ describe('WebhooksService', () => {
         },
       });
 
-      expect(mockNotificationsService.sendTrackingActivatedNotification).toHaveBeenCalledWith('order-uuid');
+      expect(
+        mockNotificationsService.sendTrackingActivatedNotification,
+      ).toHaveBeenCalledWith('order-uuid');
     });
 
     it('should return existing order if duplicate (idempotency)', async () => {
@@ -141,7 +144,9 @@ describe('WebhooksService', () => {
       });
 
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
-      expect(mockNotificationsService.sendTrackingActivatedNotification).not.toHaveBeenCalled();
+      expect(
+        mockNotificationsService.sendTrackingActivatedNotification,
+      ).not.toHaveBeenCalled();
     });
 
     it('should default to PENDING status if not provided', async () => {
@@ -166,7 +171,9 @@ describe('WebhooksService', () => {
           }),
         }),
       );
-      expect(mockNotificationsService.sendTrackingActivatedNotification).toHaveBeenCalledWith('order-uuid');
+      expect(
+        mockNotificationsService.sendTrackingActivatedNotification,
+      ).toHaveBeenCalledWith('order-uuid');
     });
   });
 
@@ -227,7 +234,9 @@ describe('WebhooksService', () => {
         },
       });
 
-      expect(mockNotificationsService.sendStatusUpdateNotification).toHaveBeenCalledWith(
+      expect(
+        mockNotificationsService.sendStatusUpdateNotification,
+      ).toHaveBeenCalledWith(
         'order-uuid',
         'IN_TRANSIT',
         'Package departed warehouse',
@@ -246,7 +255,9 @@ describe('WebhooksService', () => {
       ).rejects.toThrow('Order ORD-12345 not found');
 
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
-      expect(mockNotificationsService.sendStatusUpdateNotification).not.toHaveBeenCalled();
+      expect(
+        mockNotificationsService.sendStatusUpdateNotification,
+      ).not.toHaveBeenCalled();
     });
 
     it('should skip update if status unchanged', async () => {
@@ -271,7 +282,9 @@ describe('WebhooksService', () => {
       });
 
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
-      expect(mockNotificationsService.sendStatusUpdateNotification).not.toHaveBeenCalled();
+      expect(
+        mockNotificationsService.sendStatusUpdateNotification,
+      ).not.toHaveBeenCalled();
     });
 
     it('should create status history without note if not provided', async () => {
@@ -308,11 +321,9 @@ describe('WebhooksService', () => {
         },
       });
 
-      expect(mockNotificationsService.sendStatusUpdateNotification).toHaveBeenCalledWith(
-        'order-uuid',
-        'DELIVERED',
-        undefined,
-      );
+      expect(
+        mockNotificationsService.sendStatusUpdateNotification,
+      ).toHaveBeenCalledWith('order-uuid', 'DELIVERED', undefined);
     });
   });
 });

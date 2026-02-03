@@ -263,11 +263,11 @@ npx prisma studio
 ## Password Requirements
 
 Passwords must meet these criteria:
-- ✅ Minimum 8 characters
-- ✅ At least 1 uppercase letter
-- ✅ At least 1 lowercase letter
-- ✅ At least 1 number
-- ✅ At least 1 special character (@$!%*?&)
+- Minimum 8 characters
+- At least 1 uppercase letter
+- At least 1 lowercase letter
+- At least 1 number
+- At least 1 special character (@$!%*?&)
 
 **Valid Examples:**
 - `SecurePass123!`
@@ -300,7 +300,7 @@ You can decode JWT tokens at: https://jwt.io
 ## Next Steps
 
 After successful authentication:
-1. ✅ Submit KYC information
-2. ✅ Wait for admin approval
-3. ✅ Receive webhook credentials
-4. ✅ Start sending orders via webhooks
+1. Submit KYC information
+2. Wait for admin approval
+3. Receive webhook credentials
+4. Start sending orders via webhooks

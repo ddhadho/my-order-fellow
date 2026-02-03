@@ -55,6 +55,9 @@ describe('Webhooks (e2e)', () => {
       where: { id: companyId },
     });
 
+    // Add a short delay to allow background processes (like notifications) to finish
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 second delay
+
     await app.close();
   });
 
@@ -91,7 +94,9 @@ describe('Webhooks (e2e)', () => {
         })
         .expect(401)
         .expect((res) => {
-          expect(res.body.message).toContain('Missing X-Webhook-Secret header');
+          expect(res.body.message).toContain(
+            'Missing or invalid X-Webhook-Secret header',
+          );
         });
     });
 

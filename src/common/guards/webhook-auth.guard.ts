@@ -11,12 +11,17 @@ export class WebhookAuthGuard implements CanActivate {
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<{
+      headers: { [key: string]: string | string[] };
+      companyId?: string;
+    }>();
 
     const webhookSecret = request.headers['x-webhook-secret'];
 
-    if (!webhookSecret) {
-      throw new UnauthorizedException('Missing X-Webhook-Secret header');
+    if (!webhookSecret || Array.isArray(webhookSecret)) {
+      throw new UnauthorizedException(
+        'Missing or invalid X-Webhook-Secret header',
+      );
     }
 
     try {
@@ -40,7 +45,7 @@ export class WebhookAuthGuard implements CanActivate {
       request.companyId = company.id;
 
       return true;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid webhook credentials');
     }
   }

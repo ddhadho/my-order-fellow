@@ -4,11 +4,10 @@ import { EmailService } from './email.service';
 
 describe('EmailService', () => {
   let service: EmailService;
-  let configService: ConfigService;
 
   const mockConfigService = {
-    get: jest.fn((key: string) => {
-      const config = {
+    get: jest.fn((key: string): string | number | undefined => {
+      const config: { [key: string]: string | number } = {
         'email.smtp.host': 'smtp.test.com',
         'email.smtp.port': 587,
         'email.smtp.user': 'test@test.com',
@@ -31,7 +30,6 @@ describe('EmailService', () => {
     }).compile();
 
     service = module.get<EmailService>(EmailService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {

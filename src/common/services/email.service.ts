@@ -1,41 +1,73 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { Transporter } from 'nodemailer';
+
+interface SendEmailResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+interface BaseOrderEmailData {
+  externalOrderId: string;
+  itemSummary: string;
+}
+
+interface TrackingActivatedEmailData extends BaseOrderEmailData {
+  deliveryAddress: string;
+  currentStatus: string;
+}
 
 @Injectable()
 export class EmailService {
-  private transporter;
+  private transporter: Transporter;
 
   constructor(private config: ConfigService) {
     this.transporter = nodemailer.createTransport({
-      host: this.config.get('email.smtp.host'),
-      port: this.config.get('email.smtp.port'),
+      host: this.config.get<string>('email.smtp.host'),
+      port: this.config.get<number>('email.smtp.port'),
       secure: false,
       auth: {
-        user: this.config.get('email.smtp.user'),
-        pass: this.config.get('email.smtp.password'),
+        user: this.config.get<string>('email.smtp.user'),
+        pass: this.config.get<string>('email.smtp.password'),
       },
     });
   }
 
-  async sendEmail(to: string, subject: string, html: string) {
+  async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<SendEmailResult> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const info = await this.transporter.sendMail({
-        from: this.config.get('email.from'),
+        from: this.config.get<string>('email.from'),
         to,
         subject,
         html,
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       console.log('📧 Email sent:', info.messageId);
-      return { success: true, messageId: info.messageId };
-    } catch (error) {
+      return {
+        success: true,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        messageId: info.messageId,
+      };
+    } catch (error: unknown) {
       console.error('❌ Email failed:', error);
-      return { success: false, error: error.message };
+      if (error instanceof Error) {
+        return { success: false, error: error.message };
+      }
+      return { success: false, error: 'An unknown error occurred' };
     }
   }
 
-  generateTrackingActivatedEmail(orderData: any) {
+  generateTrackingActivatedEmail(
+    orderData: TrackingActivatedEmailData,
+  ): string {
     return `
       <!DOCTYPE html>
       <html>
@@ -67,8 +99,12 @@ export class EmailService {
     `;
   }
 
-  generateStatusUpdateEmail(orderData: any, newStatus: string, note?: string) {
-    const statusEmojis = {
+  generateStatusUpdateEmail(
+    orderData: BaseOrderEmailData,
+    newStatus: string,
+    note?: string,
+  ): string {
+    const statusEmojis: { [key: string]: string } = {
       PENDING: '⏳',
       IN_TRANSIT: '🚚',
       OUT_FOR_DELIVERY: '📦',
@@ -99,7 +135,11 @@ export class EmailService {
             <div class="status">
               ${statusEmojis[newStatus]} ${newStatus.replace('_', ' ')}
             </div>
-            ${note ? `<div class="note"><strong>Note:</strong> ${note}</div>` : ''}
+            ${
+              note
+                ? `<div class="note"><strong>Note:</strong> ${note}</div>`
+                : ''
+            }
             <p><strong>Items:</strong> ${orderData.itemSummary}</p>
           </div>
         </div>

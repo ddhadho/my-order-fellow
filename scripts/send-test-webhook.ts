@@ -10,7 +10,7 @@ const WEBHOOK_SECRET =
 
 async function sendOrderWebhook(externalOrderId: string) {
   try {
-    console.log('📦 Sending new order webhook...');
+    console.log('Sending new order webhook...');
 
     const response = await axios.post(
       `${API_URL}/order-received`,
@@ -30,12 +30,12 @@ async function sendOrderWebhook(externalOrderId: string) {
       },
     );
 
-    console.log('✅ Order webhook sent successfully:');
+    console.log('Order webhook sent successfully:');
     console.log(JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
-    console.error('❌ Error sending order webhook:');
+    console.error('Error sending order webhook:');
     console.error(error.response?.data || error.message);
     throw error;
   }
@@ -47,7 +47,7 @@ async function sendStatusUpdateWebhook(
   note: string,
 ) {
   try {
-    console.log(`\n🔄 Sending status update webhook (${status})...`);
+    console.log(`\nSending status update webhook (${status})...`);
 
     const response = await axios.post(
       `${API_URL}/status-update`,
@@ -64,12 +64,12 @@ async function sendStatusUpdateWebhook(
       },
     );
 
-    console.log('✅ Status update sent successfully:');
+    console.log('Status update sent successfully:');
     console.log(JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
-    console.error('❌ Error sending status update:');
+    console.error('Error sending status update:');
     console.error(error.response?.data || error.message);
     throw error;
   }
@@ -79,7 +79,7 @@ async function simulateOrderLifecycle() {
   try {
     // Generate a unique order ID that will be used throughout
     const externalOrderId = `ORD-${Date.now()}`;
-    console.log(`🎯 Testing with order ID: ${externalOrderId}\n`);
+    console.log(`Testing with order ID: ${externalOrderId}\n`);
 
     // 1. Create order
     await sendOrderWebhook(externalOrderId);
@@ -96,7 +96,7 @@ async function simulateOrderLifecycle() {
     );
 
     // Wait 2 seconds
-    console.log('\n⏳ Waiting 2 seconds...');
+    console.log('\n Waiting 2 seconds...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 3. Update to OUT_FOR_DELIVERY
@@ -107,7 +107,7 @@ async function simulateOrderLifecycle() {
     );
 
     // Wait 2 seconds
-    console.log('\n⏳ Waiting 2 seconds...');
+    console.log('\n Waiting 2 seconds...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 4. Update to DELIVERED
@@ -117,18 +117,18 @@ async function simulateOrderLifecycle() {
       'Package delivered successfully',
     );
 
-    console.log('\n✅ Full order lifecycle simulated successfully!');
+    console.log('\n Full order lifecycle simulated successfully!');
     console.log(
-      `📊 Order ${externalOrderId} went through: PENDING → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED`,
+      ` Order ${externalOrderId} went through: PENDING → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED`,
     );
   } catch (error) {
-    console.error('\n❌ Error in lifecycle simulation');
+    console.error('\n Error in lifecycle simulation');
     process.exit(1);
   }
 }
 
 // Run the test
-console.log('🚀 Starting webhook test...\n');
+console.log(' Starting webhook test...\n');
 simulateOrderLifecycle();
 
 // To run this script:

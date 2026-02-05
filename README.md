@@ -503,8 +503,7 @@ my-order-fellow/
 
 ### API Documentation
 
-- **Swagger UI:** [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- **Postman Collection:** [`postman/My-Order-Fellow.postman_collection.json`](postman/My-Order-Fellow.postman_collection.json)
+- **Swagger UI:** [https://my-order-fellow.onrender.com/api/docs](https://my-order-fellow.onrender.com/api/docs)
 
 ### Testing Guides
 
@@ -582,28 +581,6 @@ npm run lint                   # Lint code with ESLint
 
 ---
 
-## Contributing
-
-Contributions are welcome! This project was built as part of an internship program at **ArchSaint Nexus**.
-
-### How to Contribute
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Coding Standards
-
-- Follow the existing code structure
-- Write tests for new features
-- Update documentation
-- Follow TypeScript best practices
-- Use meaningful commit messages
-
----
-
 ## Troubleshooting
 
 ### Common Issues
@@ -649,37 +626,20 @@ npm run test
 
 ---
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-
-
 ## 🗺 Roadmap
 
 ### Completed
-- [x] Authentication with JWT
-- [x] KYC verification workflow
-- [x] Webhook integration
-- [x] Email notifications
-- [x] Order management APIs
-- [x] Public order tracking
-- [x] Comprehensive testing
-- [x] API documentation
-
-### In Progress
-- [ ] SMS notifications
-- [ ] Dashboard frontend (Vue)
-- [ ] Advanced analytics
-- [ ] Export functionality (CSV/PDF)
+- Authentication with JWT
+- KYC verification workflow
+- Webhook integration
+- Email notifications
+- Order management APIs
+- Public order tracking
+- Comprehensive testing
+- API documentation
 
 ### Planned
-- [ ] Multi-language support
-- [ ] WhatsApp notifications
-- [ ] Customer notification preferences
-- [ ] Webhook retry mechanism
-- [ ] Real-time updates (WebSockets)
----
+- SMS notifications
+- Dashboard frontend (Vue)
+
 

@@ -14,15 +14,17 @@ async function getWebhookSecret(email: string) {
   });
 
   if (!company) {
-    console.error('❌ Company not found');
+    console.error('Company not found');
     return;
   }
 
-  console.log('\n📋 Company Information:');
+  console.log('\n Company Information:');
   console.log(`Company: ${company.companyName}`);
   console.log(`KYC Status: ${company.kycStatus}`);
   console.log(`Webhook Active: ${company.isWebhookActive}`);
-  console.log(`\n🔑 Webhook Secret:\n${company.webhookSecret || 'Not generated yet'}\n`);
+  console.log(
+    `\n Webhook Secret:\n${company.webhookSecret || 'Not generated yet'}\n`,
+  );
 
   await prisma.$disconnect();
 }

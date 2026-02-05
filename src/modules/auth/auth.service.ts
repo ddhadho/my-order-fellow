@@ -9,12 +9,14 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto, LoginDto, VerifyOtpDto } from './dto';
+import { EmailService } from '../../common/services/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -45,8 +47,13 @@ export class AuthService {
       },
     });
 
-    // TODO: Send OTP email
-    console.log(`📧 OTP for ${dto.businessEmail}: ${otp}`);
+    // Send OTP email
+    const emailHtml = this.emailService.generateOtpEmail(otp);
+    await this.emailService.sendEmail(
+      dto.businessEmail,
+      'Verify Your Email',
+      emailHtml,
+    );
 
     return {
       message: 'Registration successful. Please verify your email.',

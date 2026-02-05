@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
@@ -49,15 +50,13 @@ export class EmailService {
         html,
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      console.log('📧 Email sent:', info.messageId);
+      console.log('Email sent:', info.messageId);
       return {
         success: true,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         messageId: info.messageId,
       };
     } catch (error: unknown) {
-      console.error('❌ Email failed:', error);
+      console.error('Email failed:', error);
       if (error instanceof Error) {
         return { success: false, error: error.message };
       }
@@ -141,6 +140,35 @@ export class EmailService {
                 : ''
             }
             <p><strong>Items:</strong> ${orderData.itemSummary}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  generateOtpEmail(otp: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #FFA726; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; text-align: center; }
+          .otp { background: #FFA726; color: white; padding: 15px; border-radius: 5px; text-align: center; font-size: 24px; letter-spacing: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Verify Your Email Address</h1>
+          </div>
+          <div class="content">
+            <p>Thanks for registering! Please use the following One-Time Password (OTP) to verify your email address.</p>
+            <div class="otp">${otp}</div>
+            <p>This OTP will expire in 10 minutes.</p>
           </div>
         </div>
       </body>

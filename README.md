@@ -63,7 +63,7 @@ A production-ready SaaS platform that helps e-commerce companies provide real-ti
 | **ORM** | Prisma 7 |
 | **Authentication** | JWT + Passport |
 | **Validation** | class-validator, class-transformer |
-| **Email** | Nodemailer |
+| **Email** | Resend |
 | **Documentation** | Swagger/OpenAPI |
 | **Testing** | Jest |
 | **Rate Limiting** | @nestjs/throttler |
@@ -174,11 +174,11 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/my_order_fellow?sche
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 JWT_EXPIRATION=7d
 
-# Email Configuration (Gmail example)
-SMTP_HOST=smtp.gmail.com
+# Email Configuration (Resend example)
+SMTP_HOST=smtp.resend.com
 SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-gmail-app-password
+SMTP_USER=resend
+SMTP_PASSWORD=re_YOUR_RESEND_API_KEY
 EMAIL_FROM=noreply@myorderfellow.com
 
 # Webhook Security

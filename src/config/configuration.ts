@@ -8,12 +8,7 @@ export default () => ({
     expiresIn: process.env.JWT_EXPIRATION,
   },
   email: {
-    smtp: {
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      user: process.env.SMTP_USER,
-      password: process.env.SMTP_PASSWORD,
-    },
-    from: process.env.EMAIL_FROM,
+    apiKey: process.env.RESEND_API_KEY,
+    from: process.env.RESEND_FROM_EMAIL,
   },
 });

@@ -1,22 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service';
+import { Resend } from 'resend';
+
+// Mock the Resend class
+jest.mock('resend', () => ({
+  Resend: jest.fn().mockImplementation(() => ({
+    emails: {
+      send: jest.fn(),
+    },
+  })),
+}));
 
 describe('EmailService', () => {
   let service: EmailService;
-
-  const mockConfigService = {
-    get: jest.fn((key: string): string | number | undefined => {
-      const config: { [key: string]: string | number } = {
-        'email.smtp.host': 'smtp.test.com',
-        'email.smtp.port': 587,
-        'email.smtp.user': 'test@test.com',
-        'email.smtp.password': 'testpassword',
-        'email.from': 'noreply@test.com',
-      };
-      return config[key];
-    }),
-  };
+  let resend: Resend;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -24,66 +22,68 @@ describe('EmailService', () => {
         EmailService,
         {
           provide: ConfigService,
-          useValue: mockConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'email.apiKey') return 'test-api-key';
+              if (key === 'email.from') return 'test@example.com';
+              return null;
+            }),
+          },
         },
       ],
     }).compile();
 
     service = module.get<EmailService>(EmailService);
+    resend = (service as any).resend;
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('generateTrackingActivatedEmail', () => {
-    it('should generate HTML email with order details', () => {
-      const orderData = {
-        externalOrderId: 'ORD-123',
-        itemSummary: 'Test Item',
-        deliveryAddress: 'Test Address',
-        currentStatus: 'PENDING',
-      };
+  describe('sendEmail', () => {
+    it('should send an email successfully', async () => {
+      const to = 'recipient@example.com';
+      const subject = 'Test Subject';
+      const html = '<p>Test HTML</p>';
+      const messageId = 'test-message-id';
 
-      const html = service.generateTrackingActivatedEmail(orderData);
+      (resend.emails.send as jest.Mock).mockResolvedValue({
+        data: { id: messageId },
+        error: null,
+      });
 
-      expect(html).toContain('ORD-123');
-      expect(html).toContain('Test Item');
-      expect(html).toContain('Test Address');
-      expect(html).toContain('PENDING');
-      expect(html).toContain('Order Tracking Activated');
-    });
-  });
+      const result = await service.sendEmail(to, subject, html);
 
-  describe('generateStatusUpdateEmail', () => {
-    it('should generate HTML email with status update', () => {
-      const orderData = {
-        externalOrderId: 'ORD-123',
-        itemSummary: 'Test Item',
-      };
-
-      const html = service.generateStatusUpdateEmail(
-        orderData,
-        'IN_TRANSIT',
-        'Package shipped',
-      );
-
-      expect(html).toContain('ORD-123');
-      expect(html).toContain('IN TRANSIT');
-      expect(html).toContain('Package shipped');
-      expect(html).toContain('🚚');
+      expect(resend.emails.send).toHaveBeenCalledWith({
+        from: 'test@example.com',
+        to,
+        subject,
+        html,
+      });
+      expect(result).toEqual({
+        success: true,
+        messageId,
+      });
     });
 
-    it('should handle missing note gracefully', () => {
-      const orderData = {
-        externalOrderId: 'ORD-123',
-        itemSummary: 'Test Item',
-      };
+    it('should handle email sending failure', async () => {
+      const to = 'recipient@example.com';
+      const subject = 'Test Subject';
+      const html = '<p>Test HTML</p>';
+      const errorMessage = 'Failed to send';
 
-      const html = service.generateStatusUpdateEmail(orderData, 'DELIVERED');
+      (resend.emails.send as jest.Mock).mockResolvedValue({
+        data: null,
+        error: new Error(errorMessage),
+      });
 
-      expect(html).toContain('DELIVERED');
-      expect(html).not.toContain('Update Note');
+      const result = await service.sendEmail(to, subject, html);
+
+      expect(result).toEqual({
+        success: false,
+        error: errorMessage,
+      });
     });
   });
 });

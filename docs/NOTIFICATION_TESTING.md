@@ -5,62 +5,29 @@ This guide explains how to test email notifications in My Order Fellow.
 ## Prerequisites
 
 Before testing notifications:
-1. ✅ SMTP server credentials (Gmail, SendGrid, Mailgun, etc.)
-2. ✅ Environment variables configured
-3. ✅ Phase 3 (Webhooks) completed
-4. ✅ Test email address to receive notifications
+1. Resend API Key
+2. Test email address to receive notifications
+3. Environment variables configured
 
 ---
 
 ## Email Configuration
 
-### Option 1: Gmail (Development/Testing)
+### Resend
 
-**Step 1: Enable App Passwords**
-1. Go to Google Account settings
-2. Security → 2-Step Verification (enable if not enabled)
-3. Security → App passwords
-4. Generate new app password for "Mail"
-5. Copy the 16-character password
+**Step 1: Get your Resend API Key**
+1. Sign up/Log in to Resend: https://resend.com/
+2. Go to API Keys and create a new key.
 
 **Step 2: Update .env**
 ```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-16-char-app-password
-EMAIL_FROM=noreply@myorderfellow.com
+RESEND_API_KEY=re_YOUR_RESEND_API_KEY
+RESEND_FROM_EMAIL=onboarding@yourdomain.com
 ```
 
-**Important Gmail Notes:**
-- Use App Password, NOT your regular Gmail password
-- Enable 2-Factor Authentication first
-- Gmail may block first few emails - check spam folder
-- Daily sending limit: ~500 emails
-
-### Option 2: SendGrid (Production)
-```bash
-SMTP_HOST=smtp.sendgrid.net
-SMTP_PORT=587
-SMTP_USER=apikey
-SMTP_PASSWORD=your-sendgrid-api-key
-EMAIL_FROM=noreply@yourdomain.com
-```
-
-### Option 3: Mailtrap (Testing Only)
-```bash
-SMTP_HOST=smtp.mailtrap.io
-SMTP_PORT=2525
-SMTP_USER=your-mailtrap-username
-SMTP_PASSWORD=your-mailtrap-password
-EMAIL_FROM=test@example.com
-```
-
-**Mailtrap advantages:**
-- Catches all emails (won't actually send to customers)
-- Perfect for development/testing
-- Web interface to view emails
-- Free tier available
+**Important Resend Notes:**
+- Ensure your sending domain is verified in Resend.
+- Resend offers a generous free tier for development.
 
 ---
 
@@ -74,19 +41,19 @@ npx ts-node scripts/test-email.ts your-email@example.com
 
 **Expected output:**
 ```
-📧 Testing email configuration...
-📬 Sending test email to: your-email@example.com
-✅ Test email sent successfully!
-📨 Message ID: <1234567890@smtp.gmail.com>
+Testing email configuration...
+Sending test email to: your-email@example.com
+Test email sent successfully!
+Message ID: email_xxxxxxxxxxxxxxxxxxxx
 ```
 
 **If it fails:**
 ```
-❌ Failed to send test email
-Error: Invalid login: 535-5.7.8 Username and Password not accepted
+Failed to send test email
+Error: [RESEND_API_KEY_INVALID] The API key is invalid or has expired.
 ```
 
-→ Check SMTP credentials in .env
+→ Check RESEND_API_KEY and your verified domain in Resend.
 
 ### Method 2: Check Email in Inbox
 
@@ -190,7 +157,7 @@ WEBHOOK_SECRET="your-webhook-secret"
 ORDER_ID="LIFECYCLE-$(date +%s)"
 
 # 1. Create order
-echo "📦 Creating order..."
+echo "Creating order..."
 curl -X POST http://localhost:3000/api/v1/webhooks/order-received \
   -H "X-Webhook-Secret: $WEBHOOK_SECRET" \
   -H "Content-Type: application/json" \
@@ -199,7 +166,7 @@ curl -X POST http://localhost:3000/api/v1/webhooks/order-received \
 sleep 2
 
 # 2. In Transit
-echo "🚚 Updating to IN_TRANSIT..."
+echo "Updating to IN_TRANSIT..."
 curl -X POST http://localhost:3000/api/v1/webhooks/status-update \
   -H "X-Webhook-Secret: $WEBHOOK_SECRET" \
   -H "Content-Type: application/json" \
@@ -208,7 +175,7 @@ curl -X POST http://localhost:3000/api/v1/webhooks/status-update \
 sleep 2
 
 # 3. Out for Delivery
-echo "📦 Updating to OUT_FOR_DELIVERY..."
+echo "Updating to OUT_FOR_DELIVERY..."
 curl -X POST http://localhost:3000/api/v1/webhooks/status-update \
   -H "X-Webhook-Secret: $WEBHOOK_SECRET" \
   -H "Content-Type: application/json" \
@@ -217,13 +184,13 @@ curl -X POST http://localhost:3000/api/v1/webhooks/status-update \
 sleep 2
 
 # 4. Delivered
-echo "✅ Updating to DELIVERED..."
+echo "Updating to DELIVERED..."
 curl -X POST http://localhost:3000/api/v1/webhooks/status-update \
   -H "X-Webhook-Secret: $WEBHOOK_SECRET" \
   -H "Content-Type: application/json" \
   -d "{\"externalOrderId\":\"$ORDER_ID\",\"newStatus\":\"DELIVERED\",\"note\":\"Successfully delivered\"}"
 
-echo "✅ Complete! Check email for 4 notifications"
+echo "Complete! Check email for 4 notifications"
 ```
 
 Customer should receive **4 emails total**:
@@ -274,63 +241,60 @@ await notificationsService.retryFailedNotifications();
 npm run start:dev
 
 # Look for these logs:
-# ✅ Email sent: <message-id>
-# ❌ Email failed: Error message
+# Email sent: email_xxxxxxxxxxxxxxxxxxxx
+# Email failed: Error message
 ```
 
 ### Email Status Indicators
 
 **Success:**
 ```
-📧 Email sent: <1234567890@smtp.gmail.com>
+Email sent: email_xxxxxxxxxxxxxxxxxxxx
 ```
 
 **Failure:**
 ```
-❌ Email failed: Invalid login
-❌ Email failed: Connection timeout
-❌ Email failed: Recipient address rejected
+Email failed: [RESEND_API_KEY_INVALID] The API key is invalid or has expired.
+Email failed: [RESEND_DOMAIN_NOT_VERIFIED] The sending domain is not verified.
+Email failed: [RESEND_RATE_LIMIT_EXCEEDED] Rate limit exceeded.
 ```
 
 ---
 
 ## Troubleshooting
 
-### Issue: "Invalid login: 535-5.7.8"
+### Issue: "Email failed: [RESEND_API_KEY_INVALID]"
 
-**Cause:** Incorrect SMTP credentials
-
-**Solutions:**
-- Verify SMTP_USER is correct email
-- Use App Password (not regular password) for Gmail
-- Check 2FA is enabled for Gmail
-- Regenerate App Password
-
-### Issue: "Connection timeout"
-
-**Cause:** Network/firewall blocking SMTP port
+**Cause:** Invalid or expired Resend API key.
 
 **Solutions:**
-- Check SMTP_PORT (587 for TLS, 465 for SSL)
-- Try port 587 if 465 fails
-- Check firewall settings
-- Try different SMTP provider
+- Verify `RESEND_API_KEY` in your `.env` file.
+- Ensure the API key is active and correctly copied from the Resend dashboard.
 
-### Issue: Emails going to spam
+### Issue: "Email failed: [RESEND_DOMAIN_NOT_VERIFIED]"
+
+**Cause:** The domain used in `RESEND_FROM_EMAIL` is not verified in Resend.
 
 **Solutions:**
-- Use proper EMAIL_FROM domain
-- Set up SPF/DKIM records (production)
-- Use authenticated SMTP service
-- Ask recipients to whitelist sender
+- Go to your Resend dashboard -> Domains.
+- Add and verify your sending domain.
+- Ensure `RESEND_FROM_EMAIL` matches a verified sender or domain.
+
+### Issue: "Email failed: [RESEND_RATE_LIMIT_EXCEEDED]"
+
+**Cause:** You have exceeded Resend's sending rate limits.
+
+**Solutions:**
+- Check Resend's rate limit documentation for your plan.
+- Implement back-off or queueing mechanisms for high-volume sending.
 
 ### Issue: "Emails not being sent"
 
 **Check:**
 1. **Environment variables loaded:**
 ```bash
-echo $SMTP_HOST
-echo $SMTP_USER
+echo $RESEND_API_KEY
+echo $RESEND_FROM_EMAIL
 ```
 
 2. **Application logs:**
@@ -344,7 +308,7 @@ npm run start:dev | grep "Email"
 SELECT status, error_msg FROM notifications ORDER BY created_at DESC LIMIT 5;
 ```
 
-4. **Test SMTP directly:**
+4. **Test email directly:**
 ```bash
 npx ts-node scripts/test-email.ts test@example.com
 ```
@@ -360,24 +324,24 @@ npx ts-node scripts/test-email.ts test@example.com
 ## Best Practices
 
 ### Development
-- ✅ Use Mailtrap to catch all test emails
-- ✅ Don't use production email addresses
-- ✅ Test with your own email first
+- Use Resend's test API key during development.
+- Don't use production email addresses.
+- Test with your own email first.
 
 ### Production
-- ✅ Use dedicated email service (SendGrid, AWS SES)
-- ✅ Monitor notification failure rate
-- ✅ Set up retry mechanism for failed emails
-- ✅ Configure proper SPF/DKIM records
-- ✅ Use company domain in EMAIL_FROM
-- ✅ Implement rate limiting if needed
+- Use Resend or a similar transactional email service.
+- Monitor notification failure rate.
+- Set up retry mechanism for failed emails.
+- Configure proper SPF/DKIM records in Resend and your DNS.
+- Use company domain in `RESEND_FROM_EMAIL`.
+- Implement rate limiting if needed.
 
 ### Email Content
-- ✅ Keep subject lines clear and concise
-- ✅ Include order ID in subject
-- ✅ Make emails mobile-friendly
-- ✅ Add unsubscribe option (future feature)
-- ✅ Include support contact information
+- Keep subject lines clear and concise
+- Include order ID in subject
+- Make emails mobile-friendly
+- Add unsubscribe option (future feature)
+- Include support contact information
 
 ---
 
@@ -469,6 +433,4 @@ npm run start:dev | grep "Email"
 ```
 
 **Resources:**
-- Gmail App Passwords: https://support.google.com/accounts/answer/185833
-- SendGrid Setup: https://sendgrid.com/docs/
-- Mailtrap: https://mailtrap.io/
+- Resend Documentation: https://resend.com/docs/

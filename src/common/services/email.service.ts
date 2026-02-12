@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import { Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 
 interface SendEmailResult {
   success: boolean;
@@ -22,18 +20,10 @@ interface TrackingActivatedEmailData extends BaseOrderEmailData {
 
 @Injectable()
 export class EmailService {
-  private transporter: Transporter;
+  private resend: Resend;
 
   constructor(private config: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('email.smtp.host'),
-      port: this.config.get<number>('email.smtp.port'),
-      secure: false,
-      auth: {
-        user: this.config.get<string>('email.smtp.user'),
-        pass: this.config.get<string>('email.smtp.password'),
-      },
-    });
+    this.resend = new Resend(this.config.get<string>('email.apiKey'));
   }
 
   async sendEmail(
@@ -42,25 +32,27 @@ export class EmailService {
     html: string,
   ): Promise<SendEmailResult> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const info = await this.transporter.sendMail({
-        from: this.config.get<string>('email.from'),
+      const { data, error } = await this.resend.emails.send({
+        from: this.config.get<string>('email.from') || '',
         to,
         subject,
         html,
       });
 
-      console.log('Email sent:', info.messageId);
+      if (error) {
+        throw error instanceof Error ? error : new Error(String(error));
+      }
+
+      console.log('Email sent:', data.id);
       return {
         success: true,
-        messageId: info.messageId,
+        messageId: data.id,
       };
     } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unknown error occurred';
       console.error('Email failed:', error);
-      if (error instanceof Error) {
-        return { success: false, error: error.message };
-      }
-      return { success: false, error: 'An unknown error occurred' };
+      return { success: false, error: errorMessage };
     }
   }
 

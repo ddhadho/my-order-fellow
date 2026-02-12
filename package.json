@@ -21,14 +21,11 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "webhook:test": "ts-node scripts/send-test-webhook.ts",
     "webhook:secret": "ts-node scripts/get-webhook-secret.ts",
-
     "email:test": "ts-node -r tsconfig-paths/register scripts/test-email.ts",
     "notifications:retry": "ts-node scripts/retry-notifications.ts",
-
     "test:auth": "jest --testPathPatterns=auth",
     "test:auth:unit": "jest auth.service.spec",
     "test:auth:e2e": "jest auth.e2e-spec --config ./test/jest-e2e.json",
-
     "test:orders": "jest --testPathPatterns=orders",
     "test:orders:unit": "jest orders.service.spec",
     "test:orders:e2e": "jest orders.e2e-spec --config ./test/jest-e2e.json"
@@ -49,11 +46,11 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
-    "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.17.2",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.9.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1"
   },

@@ -7,12 +7,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SubmitKycDto, ReviewKycDto } from './dto';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../../common/services/email.service'; // Added
 
 @Injectable()
 export class KycService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private emailService: EmailService, // Added
   ) {}
 
   async submitKyc(companyId: string, dto: SubmitKycDto) {
@@ -81,9 +83,15 @@ export class KycService {
         },
       });
 
-      // TODO: Send email with webhook credentials
-      console.log(
-        `📧 Webhook secret for ${kyc.company.businessEmail}: ${secret}`,
+      // Send email with webhook credentials
+      const emailHtml = this.emailService.generateKycApprovedEmail(
+        kyc.company.companyName || 'Valued Customer',
+        secret,
+      );
+      await this.emailService.sendEmail(
+        kyc.company.businessEmail,
+        'My Order Fellow - KYC Approved & Webhook Credentials',
+        emailHtml,
       );
     }
 

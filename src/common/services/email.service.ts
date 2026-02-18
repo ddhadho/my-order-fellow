@@ -196,4 +196,40 @@ export class EmailService {
 
     return this.sendEmail(to, 'My Order Fellow - Email Test', html);
   }
+
+  generateKycApprovedEmail(companyName: string, webhookSecret: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; }
+          .secret-box { background: #e0e0e0; padding: 10px; border-radius: 5px; font-family: 'Courier New', Courier, monospace; overflow-wrap: break-word; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>KYC Approved!</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${companyName},</p>
+            <p>Congratulations! Your Know Your Customer (KYC) application has been successfully approved.</p>
+            <p>Your webhook integration is now active. Please find your webhook secret below:</p>
+            <div class="secret-box">
+              <strong>Webhook Secret:</strong> ${webhookSecret}
+            </div>
+            <p>Keep this secret confidential and secure. You will need it to verify the authenticity of webhook payloads sent to your system.</p>
+            <p>If you have any questions, please do not hesitate to contact our support team.</p>
+            <p>Sincerely,</p>
+            <p>The My Order Fellow Team</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }

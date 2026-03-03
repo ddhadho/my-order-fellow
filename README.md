@@ -174,12 +174,9 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/my_order_fellow?sche
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 JWT_EXPIRATION=7d
 
-# Email Configuration (Resend example)
-SMTP_HOST=smtp.resend.com
-SMTP_PORT=587
-SMTP_USER=resend
-SMTP_PASSWORD=re_YOUR_RESEND_API_KEY
-EMAIL_FROM=noreply@myorderfellow.com
+# Email Configuration (Resend)
+RESEND_API_KEY=re_YOUR_RESEND_API_KEY
+RESEND_FROM_EMAIL=onboarding@yourdomain.com
 
 # Webhook Security
 WEBHOOK_SECRET_SALT=your-webhook-salt-change-this-min-32-chars
@@ -188,12 +185,6 @@ WEBHOOK_SECRET_SALT=your-webhook-salt-change-this-min-32-chars
 THROTTLE_TTL=60
 THROTTLE_LIMIT=10
 ```
-
-** Note:** For Gmail, you need to:
-1. Enable 2-Factor Authentication
-2. Generate an App Password ([Guide](https://support.google.com/accounts/answer/185833))
-3. Use the App Password in `SMTP_PASSWORD`
-
 ### Quick Test
 
 ```bash
@@ -486,9 +477,6 @@ my-order-fellow/
 │   ├── WEBHOOK_TESTING.md       # Webhook testing guide
 │   ├── NOTIFICATION_TESTING.md  # Notification testing guide
 │   └── ORDERS_TESTING.md        # Order endpoints testing guide
-├── postman/
-│   ├── My-Order-Fellow.postman_collection.json
-│   └── My-Order-Fellow.postman_environment.json
 ├── .env.example                  # Environment template
 ├── .gitignore
 ├── package.json
@@ -553,7 +541,7 @@ npm run lint                   # Lint code with ESLint
 
 **Triggers:**
 - Order tracking activated (when order received)
-- Status changed (PENDING → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED)
+- Status changed (PENDING → IN_TRANSIT → DELIVERED)
 
 **Features:**
 - Professional HTML email templates

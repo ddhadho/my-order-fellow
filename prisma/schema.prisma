@@ -20,11 +20,17 @@ model Company {
   webhookSecret     String?   @unique
   isWebhookActive   Boolean   @default(false)
   kycStatus         String    @default("PENDING")
+  role              Role      @default(USER) // Added role field
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
   kycInfo       KycInfo?
   orders        Order[]
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model KycInfo {

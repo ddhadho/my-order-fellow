@@ -50,7 +50,7 @@ export class WebhooksService {
       },
     });
 
-    console.log(`✅ Order created: ${order.externalOrderId}`);
+    console.log(`Order created: ${order.externalOrderId}`);
 
     // Send tracking activated notification (async, don't block response)
     this.notifications
@@ -108,7 +108,7 @@ export class WebhooksService {
     });
 
     console.log(
-      `✅ Order ${order.externalOrderId} updated to ${updateDto.newStatus}`,
+      `Order ${order.externalOrderId} updated to ${updateDto.newStatus}`,
     );
 
     // Send status update notification (async, don't block response)

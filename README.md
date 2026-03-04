@@ -5,7 +5,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
 
-A production-ready SaaS platform that helps e-commerce companies provide real-time order tracking updates to their customers through automated webhook integration and email notifications.
+A SaaS platform that helps e-commerce companies provide real-time order tracking updates to their customers through automated webhook integration and email notifications.
 
 ** API Documentation:** [https://my-order-fellow.onrender.com/api/docs](https://my-order-fellow.onrender.com/api/docs)
 

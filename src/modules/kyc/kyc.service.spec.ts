@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KycService } from './kyc.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { EmailService } from '../../common/services/email.service';
 
 describe('KycService', () => {
   let service: KycService;
@@ -23,11 +23,14 @@ describe('KycService', () => {
 
   const mockConfigService = {
     get: jest.fn((key: string) => {
-      if (key === 'webhook.secretSalt') {
-        return 'test-salt';
-      }
+      if (key === 'webhook.secretSalt') return 'test-salt';
       return null;
     }),
+  };
+
+  const mockEmailService = {
+    sendEmail: jest.fn().mockResolvedValue({ success: true }),
+    generateKycApprovedEmail: jest.fn().mockReturnValue('<html>KYC</html>'),
   };
 
   beforeEach(async () => {
@@ -41,6 +44,10 @@ describe('KycService', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
         },
       ],
     }).compile();

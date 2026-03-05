@@ -4,17 +4,16 @@ import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../../common/services/email.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: AuthService;
 
-  // Mock JwtService for AuthService
   const mockJwtService = {
     sign: jest.fn(),
   };
 
-  // Mock PrismaService for AuthService
   const mockPrismaService = {
     company: {
       findUnique: jest.fn(),
@@ -23,24 +22,32 @@ describe('AuthController', () => {
     },
   };
 
+  const mockEmailService = {
+    sendEmail: jest.fn().mockResolvedValue({ success: true }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
           load: [() => ({ jwt: { secret: 'test' } })],
-        }), // Provide a mock ConfigModule
+        }),
       ],
       controllers: [AuthController],
       providers: [
-        AuthService, // Provide AuthService
+        AuthService,
         {
-          provide: JwtService, // Mock JwtService for AuthService
+          provide: JwtService,
           useValue: mockJwtService,
         },
         {
-          provide: PrismaService, // Provide mock PrismaService for AuthService
+          provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
         },
       ],
     }).compile();

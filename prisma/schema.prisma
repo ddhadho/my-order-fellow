@@ -17,13 +17,15 @@ model Company {
   isEmailVerified   Boolean   @default(false)
   emailOtp          String?
   emailOtpExpiresAt DateTime?
+  passwordResetToken     String?    // ADD THIS
+  passwordResetExpiresAt DateTime?  // ADD THIS
   webhookSecret     String?   @unique
   isWebhookActive   Boolean   @default(false)
   kycStatus         String    @default("PENDING")
-  role              Role      @default(USER) // Added role field
+  role              Role      @default(USER)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   kycInfo       KycInfo?
   orders        Order[]
 }

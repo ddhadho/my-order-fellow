@@ -126,4 +126,68 @@ export class AuthService {
       },
     };
   }
+
+  async forgotPassword(businessEmail: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { businessEmail },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!company) {
+      return { message: 'If that email exists, a reset link has been sent.' };
+    }
+
+    // Generate reset token
+    const resetToken =
+      Math.random().toString(36).substring(2) +
+      Math.random().toString(36).substring(2);
+    const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.company.update({
+      where: { id: company.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpiresAt: resetExpiry,
+      },
+    });
+
+    const emailHtml = this.emailService.generatePasswordResetEmail(resetToken);
+    await this.emailService.sendEmail(
+      businessEmail,
+      'Password Reset Request',
+      emailHtml,
+    );
+
+    return { message: 'If that email exists, a reset link has been sent.' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { passwordResetToken: token },
+    });
+
+    if (!company) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    if (
+      !company.passwordResetExpiresAt ||
+      new Date() > company.passwordResetExpiresAt
+    ) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.company.update({
+      where: { id: company.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    return { message: 'Password reset successful' };
+  }
 }

@@ -232,4 +232,35 @@ export class EmailService {
       </html>
     `;
   }
+
+  generatePasswordResetEmail(resetToken: string): string {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #E53935; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; text-align: center; }
+        .token { background: #E53935; color: white; padding: 15px; border-radius: 5px;
+                 font-family: 'Courier New', monospace; font-size: 14px; word-break: break-all; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Password Reset Request</h1>
+        </div>
+        <div class="content">
+          <p>You requested a password reset. Use the token below to reset your password.</p>
+          <div class="token">${resetToken}</div>
+          <p>This token will expire in 1 hour.</p>
+          <p>If you did not request this, please ignore this email.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  }
 }

@@ -5,23 +5,37 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
-  async getOrdersByCompany(companyId: string, page = 1, limit = 20) {
+  async getOrdersByCompany(
+    companyId: string,
+    page = 1,
+    limit = 20,
+    startDate?: string,
+    endDate?: string,
+  ) {
     const skip = (page - 1) * limit;
+
+    const whereClause: any = { companyId };
+
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) whereClause.createdAt.gte = new Date(startDate);
+      if (endDate) whereClause.createdAt.lte = new Date(endDate);
+    }
 
     const [orders, total] = await Promise.all([
       this.prisma.order.findMany({
-        where: { companyId },
+        where: whereClause,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           statusHistory: {
             orderBy: { timestamp: 'desc' },
-            take: 1, // Only latest status
+            take: 1,
           },
         },
       }),
-      this.prisma.order.count({ where: { companyId } }),
+      this.prisma.order.count({ where: whereClause }),
     ]);
 
     return {
@@ -137,6 +151,8 @@ export class OrdersService {
       externalOrderId?: string;
       customerEmail?: string;
       status?: string;
+      startDate?: string;
+      endDate?: string;
       page?: number;
       limit?: number;
     },
@@ -145,6 +161,8 @@ export class OrdersService {
       externalOrderId,
       customerEmail,
       status,
+      startDate,
+      endDate,
       page = 1,
       limit = 20,
     } = filters;
@@ -168,6 +186,12 @@ export class OrdersService {
 
     if (status) {
       whereClause.currentStatus = status;
+    }
+
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) whereClause.createdAt.gte = new Date(startDate);
+      if (endDate) whereClause.createdAt.lte = new Date(endDate);
     }
 
     const [orders, total] = await Promise.all([
@@ -198,6 +222,8 @@ export class OrdersService {
         externalOrderId,
         customerEmail,
         status,
+        startDate,
+        endDate,
       },
     };
   }

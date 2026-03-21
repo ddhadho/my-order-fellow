@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -225,6 +229,51 @@ export class OrdersService {
         startDate,
         endDate,
       },
+    };
+  }
+
+  async cancelOrder(orderId: string, companyId: string, reason?: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, companyId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.currentStatus === 'CANCELLED') {
+      throw new BadRequestException('Order is already cancelled');
+    }
+
+    if (order.currentStatus === 'DELIVERED') {
+      throw new BadRequestException('Cannot cancel a delivered order');
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: order.id },
+      data: {
+        currentStatus: 'CANCELLED',
+        statusHistory: {
+          create: {
+            status: 'CANCELLED',
+            note: reason || 'Order cancelled',
+          },
+        },
+      },
+      include: {
+        statusHistory: {
+          orderBy: { timestamp: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      orderId: updatedOrder.id,
+      previousStatus: order.currentStatus,
+      currentStatus: 'CANCELLED',
+      reason: reason || 'Order cancelled',
     };
   }
 }

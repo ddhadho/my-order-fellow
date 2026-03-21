@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -120,5 +129,17 @@ export class OrdersController {
   })
   getOrderById(@Param('id') id: string, @GetUser() company: Company) {
     return this.ordersService.getOrderById(id, company.id);
+  }
+
+  @Post(':id/cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel an order with optional reason' })
+  cancelOrder(
+    @Param('id') id: string,
+    @GetUser() company: Company,
+    @Body() dto: CancelOrderDto,
+  ) {
+    return this.ordersService.cancelOrder(id, company.id, dto.reason);
   }
 }

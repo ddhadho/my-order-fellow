@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { BulkUpdateStatusDto } from './dto/bulk-update-status.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -141,5 +142,21 @@ export class OrdersController {
     @Body() dto: CancelOrderDto,
   ) {
     return this.ordersService.cancelOrder(id, company.id, dto.reason);
+  }
+
+  @Post('bulk-status-update')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update status for multiple orders at once' })
+  bulkUpdateStatus(
+    @GetUser() company: Company,
+    @Body() dto: BulkUpdateStatusDto,
+  ) {
+    return this.ordersService.bulkUpdateStatus(
+      company.id,
+      dto.orderIds,
+      dto.newStatus,
+      dto.note,
+    );
   }
 }

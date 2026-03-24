@@ -276,4 +276,53 @@ export class OrdersService {
       reason: reason || 'Order cancelled',
     };
   }
+
+  async bulkUpdateStatus(
+    companyId: string,
+    orderIds: string[],
+    newStatus: string,
+    note?: string,
+  ) {
+    // Verify all orders belong to this company
+    const orders = await this.prisma.order.findMany({
+      where: {
+        id: { in: orderIds },
+        companyId,
+      },
+    });
+
+    const foundIds = orders.map((o) => o.id);
+    const notFoundIds = orderIds.filter((id) => !foundIds.includes(id));
+
+    // Filter out already cancelled or delivered orders from update
+    const updatableOrders = orders.filter(
+      (o) => o.currentStatus !== 'CANCELLED' && o.currentStatus !== newStatus,
+    );
+
+    // Update each order and create status history
+    const results = await Promise.all(
+      updatableOrders.map((order) =>
+        this.prisma.order.update({
+          where: { id: order.id },
+          data: {
+            currentStatus: newStatus,
+            statusHistory: {
+              create: {
+                status: newStatus,
+                note: note || `Bulk status update to ${newStatus}`,
+              },
+            },
+          },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      updated: results.length,
+      skipped: orderIds.length - results.length - notFoundIds.length,
+      notFound: notFoundIds,
+      newStatus,
+    };
+  }
 }

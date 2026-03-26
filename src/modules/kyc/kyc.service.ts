@@ -7,18 +7,17 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SubmitKycDto, ReviewKycDto } from './dto';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
-import { EmailService } from '../../common/services/email.service'; // Added
+import { EmailService } from '../../common/services/email.service';
 
 @Injectable()
 export class KycService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
-    private emailService: EmailService, // Added
+    private emailService: EmailService,
   ) {}
 
   async submitKyc(companyId: string, dto: SubmitKycDto) {
-    // Check if KYC already exists
     const existing = await this.prisma.kycInfo.findUnique({
       where: { companyId },
     });
@@ -50,9 +49,9 @@ export class KycService {
       throw new NotFoundException('KYC not found');
     }
 
+    const fromStatus = kyc.company.kycStatus;
     const newStatus = dto.decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
 
-    // Update KYC and company status
     await this.prisma.kycInfo.update({
       where: { id: kycId },
       data: {
@@ -67,7 +66,17 @@ export class KycService {
       data: { kycStatus: newStatus },
     });
 
-    // If approved, generate webhook secret
+    // Write audit log entry
+    await this.prisma.kycAuditLog.create({
+      data: {
+        kycId,
+        changedBy: adminId,
+        fromStatus,
+        toStatus: newStatus,
+        notes: dto.notes,
+      },
+    });
+
     if (newStatus === 'APPROVED') {
       const salt = this.config.get('webhook.secretSalt');
       const secret = crypto
@@ -83,11 +92,11 @@ export class KycService {
         },
       });
 
-      // Send email with webhook credentials
       const emailHtml = this.emailService.generateKycApprovedEmail(
         kyc.company.companyName || 'Valued Customer',
         secret,
       );
+
       await this.emailService.sendEmail(
         kyc.company.businessEmail,
         'My Order Fellow - KYC Approved & Webhook Credentials',
@@ -116,5 +125,26 @@ export class KycService {
         },
       },
     });
+  }
+
+  async getKycAuditLog(kycId: string) {
+    const kyc = await this.prisma.kycInfo.findUnique({
+      where: { id: kycId },
+    });
+
+    if (!kyc) {
+      throw new NotFoundException('KYC not found');
+    }
+
+    const logs = await this.prisma.kycAuditLog.findMany({
+      where: { kycId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      kycId,
+      totalEntries: logs.length,
+      logs,
+    };
   }
 }

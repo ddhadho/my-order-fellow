@@ -48,7 +48,22 @@ model KycInfo {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  auditLogs KycAuditLog[]
+}
+
+model KycAuditLog {
+  id         String   @id @default(uuid())
+  kycId      String
+  changedBy  String
+  fromStatus String
+  toStatus   String
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  kyc KycInfo @relation(fields: [kycId], references: [id], onDelete: Cascade)
+
+  @@index([kycId])
 }
 
 model Order {

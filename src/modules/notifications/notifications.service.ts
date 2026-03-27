@@ -12,9 +12,15 @@ export class NotificationsService {
   async sendTrackingActivatedNotification(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { company: { include: { notificationPreference: true } } },
     });
 
     if (!order) return;
+
+    const prefs = order.company.notificationPreference;
+
+    // Skip if email notifications disabled for tracking
+    if (prefs && !prefs.emailOnTracking) return;
 
     const html = this.emailService.generateTrackingActivatedEmail(order);
     const result = await this.emailService.sendEmail(
@@ -23,7 +29,6 @@ export class NotificationsService {
       html,
     );
 
-    // Log notification
     await this.prisma.notification.create({
       data: {
         orderId,
@@ -46,9 +51,15 @@ export class NotificationsService {
   ) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
+      include: { company: { include: { notificationPreference: true } } },
     });
 
     if (!order) return;
+
+    const prefs = order.company.notificationPreference;
+
+    // Skip if email notifications disabled for status updates
+    if (prefs && !prefs.emailOnStatusUpdate) return;
 
     const html = this.emailService.generateStatusUpdateEmail(
       order,
@@ -146,6 +157,37 @@ export class NotificationsService {
         failedAt: true,
         errorMsg: true,
         createdAt: true,
+      },
+    });
+  }
+
+  async getOrCreatePreferences(companyId: string) {
+    const existing = await this.prisma.notificationPreference.findUnique({
+      where: { companyId },
+    });
+
+    if (existing) return existing;
+
+    return this.prisma.notificationPreference.create({
+      data: { companyId },
+    });
+  }
+
+  async updatePreferences(
+    companyId: string,
+    dto: {
+      emailOnTracking?: boolean;
+      emailOnStatusUpdate?: boolean;
+      smsOnTracking?: boolean;
+      smsOnStatusUpdate?: boolean;
+    },
+  ) {
+    return this.prisma.notificationPreference.upsert({
+      where: { companyId },
+      update: dto,
+      create: {
+        companyId,
+        ...dto,
       },
     });
   }

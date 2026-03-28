@@ -17,6 +17,11 @@ describe('NotificationsService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    notificationPreference: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      upsert: jest.fn(),
+    },
   };
 
   const mockEmailService = {
@@ -60,6 +65,9 @@ describe('NotificationsService', () => {
         itemSummary: 'Test Item',
         deliveryAddress: 'Test Address',
         currentStatus: 'PENDING',
+        company: {
+          notificationPreference: null,
+        },
       };
 
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
@@ -76,6 +84,7 @@ describe('NotificationsService', () => {
 
       expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({
         where: { id: 'order-123' },
+        include: { company: { include: { notificationPreference: true } } },
       });
 
       expect(mockEmailService.sendEmail).toHaveBeenCalledWith(
@@ -102,6 +111,9 @@ describe('NotificationsService', () => {
         itemSummary: 'Test Item',
         deliveryAddress: 'Test Address',
         currentStatus: 'PENDING',
+        company: {
+          notificationPreference: null,
+        },
       };
 
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
@@ -124,6 +136,32 @@ describe('NotificationsService', () => {
       });
     });
 
+    it('should skip notification if emailOnTracking is disabled', async () => {
+      const mockOrder = {
+        id: 'order-123',
+        externalOrderId: 'ORD-123',
+        customerEmail: 'customer@example.com',
+        itemSummary: 'Test Item',
+        deliveryAddress: 'Test Address',
+        currentStatus: 'PENDING',
+        company: {
+          notificationPreference: {
+            emailOnTracking: false,
+            emailOnStatusUpdate: true,
+            smsOnTracking: false,
+            smsOnStatusUpdate: false,
+          },
+        },
+      };
+
+      mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
+
+      await service.sendTrackingActivatedNotification('order-123');
+
+      expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+      expect(mockPrismaService.notification.create).not.toHaveBeenCalled();
+    });
+
     it('should handle missing order gracefully', async () => {
       mockPrismaService.order.findUnique.mockResolvedValue(null);
 
@@ -142,6 +180,9 @@ describe('NotificationsService', () => {
         customerEmail: 'customer@example.com',
         itemSummary: 'Test Item',
         currentStatus: 'IN_TRANSIT',
+        company: {
+          notificationPreference: null,
+        },
       };
 
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
@@ -181,6 +222,9 @@ describe('NotificationsService', () => {
         customerEmail: 'customer@example.com',
         itemSummary: 'Test Item',
         currentStatus: 'DELIVERED',
+        company: {
+          notificationPreference: null,
+        },
       };
 
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
@@ -198,6 +242,31 @@ describe('NotificationsService', () => {
         undefined,
       );
     });
+
+    it('should skip notification if emailOnStatusUpdate is disabled', async () => {
+      const mockOrder = {
+        id: 'order-123',
+        externalOrderId: 'ORD-123',
+        customerEmail: 'customer@example.com',
+        itemSummary: 'Test Item',
+        currentStatus: 'IN_TRANSIT',
+        company: {
+          notificationPreference: {
+            emailOnTracking: true,
+            emailOnStatusUpdate: false,
+            smsOnTracking: false,
+            smsOnStatusUpdate: false,
+          },
+        },
+      };
+
+      mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
+
+      await service.sendStatusUpdateNotification('order-123', 'IN_TRANSIT');
+
+      expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+      expect(mockPrismaService.notification.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('retryFailedNotifications', () => {
@@ -208,6 +277,7 @@ describe('NotificationsService', () => {
           type: 'TRACKING_ACTIVATED',
           recipient: 'customer1@example.com',
           subject: 'Order ORD-1 - Tracking Activated',
+          body: '<html>Tracking</html>',
           order: {
             id: 'order-1',
             externalOrderId: 'ORD-1',
@@ -220,6 +290,7 @@ describe('NotificationsService', () => {
           type: 'STATUS_UPDATE',
           recipient: 'customer2@example.com',
           subject: 'Order ORD-2 - Status Update',
+          body: '<html>Status</html>',
           order: {
             id: 'order-2',
             externalOrderId: 'ORD-2',
@@ -231,12 +302,6 @@ describe('NotificationsService', () => {
 
       mockPrismaService.notification.findMany.mockResolvedValue(
         mockFailedNotifications,
-      );
-      mockEmailService.generateTrackingActivatedEmail.mockReturnValue(
-        '<html>Tracking</html>',
-      );
-      mockEmailService.generateStatusUpdateEmail.mockReturnValue(
-        '<html>Status</html>',
       );
       mockEmailService.sendEmail.mockResolvedValue({ success: true });
       mockPrismaService.notification.update.mockResolvedValue({});
@@ -259,6 +324,7 @@ describe('NotificationsService', () => {
           type: 'TRACKING_ACTIVATED',
           recipient: 'customer@example.com',
           subject: 'Order ORD-1 - Tracking Activated',
+          body: '<html>Test</html>',
           order: {
             id: 'order-1',
             externalOrderId: 'ORD-1',
@@ -270,9 +336,6 @@ describe('NotificationsService', () => {
 
       mockPrismaService.notification.findMany.mockResolvedValue(
         mockFailedNotifications,
-      );
-      mockEmailService.generateTrackingActivatedEmail.mockReturnValue(
-        '<html>Test</html>',
       );
       mockEmailService.sendEmail.mockResolvedValue({
         success: false,
@@ -311,4 +374,86 @@ describe('NotificationsService', () => {
       expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
     });
   });
+
+  describe('getOrCreatePreferences', () => {
+    it('should return existing preferences', async () => {
+      const mockPrefs = {
+        id: 'pref-1',
+        companyId: 'company-123',
+        emailOnTracking: true,
+        emailOnStatusUpdate: true,
+        smsOnTracking: false,
+        smsOnStatusUpdate: false,
+      };
+
+      mockPrismaService.notificationPreference.findUnique.mockResolvedValue(
+        mockPrefs,
+      );
+
+      const result = await service.getOrCreatePreferences('company-123');
+
+      expect(result).toEqual(mockPrefs);
+      expect(
+        mockPrismaService.notificationPreference.create,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should create default preferences if none exist', async () => {
+      const mockPrefs = {
+        id: 'pref-1',
+        companyId: 'company-123',
+        emailOnTracking: true,
+        emailOnStatusUpdate: true,
+        smsOnTracking: false,
+        smsOnStatusUpdate: false,
+      };
+
+      mockPrismaService.notificationPreference.findUnique.mockResolvedValue(
+        null,
+      );
+      mockPrismaService.notificationPreference.create.mockResolvedValue(
+        mockPrefs,
+      );
+
+      const result = await service.getOrCreatePreferences('company-123');
+
+      expect(result).toEqual(mockPrefs);
+      expect(
+        mockPrismaService.notificationPreference.create,
+      ).toHaveBeenCalledWith({
+        data: { companyId: 'company-123' },
+      });
+    });
+  });
+
+  describe('updatePreferences', () => {
+    it('should upsert notification preferences', async () => {
+      const mockPrefs = {
+        id: 'pref-1',
+        companyId: 'company-123',
+        emailOnTracking: false,
+        emailOnStatusUpdate: true,
+        smsOnTracking: false,
+        smsOnStatusUpdate: false,
+      };
+
+      mockPrismaService.notificationPreference.upsert.mockResolvedValue(
+        mockPrefs,
+      );
+
+      const result = await service.updatePreferences('company-123', {
+        emailOnTracking: false,
+      });
+
+      expect(result).toEqual(mockPrefs);
+      expect(
+        mockPrismaService.notificationPreference.upsert,
+      ).toHaveBeenCalledWith({
+        where: { companyId: 'company-123' },
+        update: { emailOnTracking: false },
+        create: { companyId: 'company-123', emailOnTracking: false },
+      });
+    });
+  });
 });
+

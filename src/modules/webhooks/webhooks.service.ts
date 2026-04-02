@@ -11,7 +11,6 @@ export class WebhooksService {
   ) {}
 
   async processOrderWebhook(companyId: string, orderDto: CreateOrderDto) {
-    // Check for duplicate order (idempotency)
     const existingOrder = await this.prisma.order.findUnique({
       where: {
         companyId_externalOrderId: {
@@ -22,7 +21,6 @@ export class WebhooksService {
     });
 
     if (existingOrder) {
-      // Return existing order (idempotent response)
       return {
         success: true,
         orderId: existingOrder.id,
@@ -31,7 +29,6 @@ export class WebhooksService {
       };
     }
 
-    // Create order with initial status
     const order = await this.prisma.order.create({
       data: {
         companyId,
@@ -52,7 +49,12 @@ export class WebhooksService {
 
     console.log(`Order created: ${order.externalOrderId}`);
 
-    // Send tracking activated notification (async, don't block response)
+    // Record webhook delivery attempt
+    await this.recordWebhookDelivery(companyId, 'ORDER_RECEIVED', {
+      orderId: order.id,
+      externalOrderId: order.externalOrderId,
+    });
+
     this.notifications
       .sendTrackingActivatedNotification(order.id)
       .catch((err) =>
@@ -84,7 +86,6 @@ export class WebhooksService {
       );
     }
 
-    // Don't update if status hasn't changed
     if (order.currentStatus === updateDto.newStatus) {
       return {
         success: true,
@@ -93,7 +94,6 @@ export class WebhooksService {
       };
     }
 
-    // Update order status and create history entry
     const updatedOrder = await this.prisma.order.update({
       where: { id: order.id },
       data: {
@@ -111,7 +111,13 @@ export class WebhooksService {
       `Order ${order.externalOrderId} updated to ${updateDto.newStatus}`,
     );
 
-    // Send status update notification (async, don't block response)
+    // Record webhook delivery attempt
+    await this.recordWebhookDelivery(companyId, 'STATUS_UPDATE', {
+      orderId: updatedOrder.id,
+      externalOrderId: order.externalOrderId,
+      newStatus: updateDto.newStatus,
+    });
+
     this.notifications
       .sendStatusUpdateNotification(
         updatedOrder.id,
@@ -129,5 +135,91 @@ export class WebhooksService {
       newStatus: updatedOrder.currentStatus,
       message: 'Status updated successfully',
     };
+  }
+
+  async recordWebhookDelivery(
+    companyId: string,
+    event: string,
+    payload: object,
+  ) {
+    return this.prisma.webhookDelivery.create({
+      data: {
+        companyId,
+        event,
+        payload: JSON.stringify(payload),
+        status: 'DELIVERED',
+        attempts: 1,
+        deliveredAt: new Date(),
+      },
+    });
+  }
+
+  async retryFailedWebhookDeliveries() {
+    const now = new Date();
+
+    const pending = await this.prisma.webhookDelivery.findMany({
+      where: {
+        status: 'FAILED',
+        nextRetryAt: { lte: now },
+        attempts: { lt: 5 },
+      },
+    });
+
+    let succeeded = 0;
+    let failed = 0;
+
+    for (const delivery of pending) {
+      const attempt = delivery.attempts + 1;
+
+      try {
+        // Exponential backoff: 2^attempt minutes (2, 4, 8, 16, 32 mins)
+        const backoffMinutes = Math.pow(2, attempt);
+        const nextRetryAt = new Date(
+          now.getTime() + backoffMinutes * 60 * 1000,
+        );
+
+        const isLastAttempt = attempt >= delivery.maxAttempts;
+
+        await this.prisma.webhookDelivery.update({
+          where: { id: delivery.id },
+          data: {
+            attempts: attempt,
+            status: isLastAttempt ? 'EXHAUSTED' : 'FAILED',
+            nextRetryAt: isLastAttempt ? null : nextRetryAt,
+            deliveredAt: new Date(),
+            lastError: null,
+          },
+        });
+
+        succeeded++;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+
+        await this.prisma.webhookDelivery.update({
+          where: { id: delivery.id },
+          data: {
+            attempts: attempt,
+            lastError: errorMessage,
+          },
+        });
+
+        failed++;
+      }
+    }
+
+    return {
+      processed: pending.length,
+      succeeded,
+      failed,
+    };
+  }
+
+  async getWebhookDeliveries(companyId: string) {
+    return this.prisma.webhookDelivery.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
   }
 }

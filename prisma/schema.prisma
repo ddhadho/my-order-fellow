@@ -29,6 +29,7 @@ model Company {
   kycInfo                  KycInfo?
   orders                   Order[]
   notificationPreference   NotificationPreference?
+  webhookDeliveries        WebhookDelivery[]
 }
 
 model NotificationPreference {
@@ -131,4 +132,25 @@ model Notification {
   
   @@index([orderId])
   @@index([status])
+}
+
+model WebhookDelivery {
+  id          String    @id @default(uuid())
+  companyId   String
+  event       String
+  payload     String
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  status      String    @default("PENDING")
+  nextRetryAt DateTime?
+  lastError   String?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([nextRetryAt])
 }

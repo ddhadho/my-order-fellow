@@ -1,15 +1,20 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { GetUser } from '../../common/decorators/get-user.decorator';
+import type { Company } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiBearerAuth,
   ApiSecurity,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -67,5 +72,22 @@ export class WebhooksController {
       companyId,
       updateStatusDto,
     );
+  }
+
+  @Get('deliveries')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get webhook delivery history for company' })
+  getDeliveries(@GetUser() company: Company) {
+    return this.webhooksService.getWebhookDeliveries(company.id);
+  }
+
+  @Post('deliveries/retry')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Retry failed webhook deliveries' })
+  retryDeliveries() {
+    return this.webhooksService.retryFailedWebhookDeliveries();
   }
 }

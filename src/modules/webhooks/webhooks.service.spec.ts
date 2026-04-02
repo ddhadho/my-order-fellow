@@ -17,6 +17,11 @@ describe('WebhooksService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    webhookDelivery: {
+      create: jest.fn().mockResolvedValue({}),
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue({}),
+    },
   };
 
   const mockNotificationsService = {

@@ -7,6 +7,7 @@ import { KycModule } from './modules/kyc/kyc.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { CompaniesModule } from './modules/companies/companies.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -27,6 +28,7 @@ import configuration from './config/configuration';
     WebhooksModule,
     NotificationsModule,
     OrdersModule,
+    CompaniesModule,
   ],
 })
 export class AppModule {}

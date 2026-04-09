@@ -23,6 +23,8 @@ model Company {
   isWebhookActive        Boolean   @default(false)
   kycStatus              String    @default("PENDING")
   role                   Role      @default(USER)
+  phoneNumber            String? 
+  businessAddress        String?  
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 

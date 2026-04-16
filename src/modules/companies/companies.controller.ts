@@ -4,6 +4,7 @@ import {
   Patch,
   Delete,
   Body,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -39,5 +40,20 @@ export class CompaniesController {
   @ApiOperation({ summary: 'Delete company account' })
   deleteAccount(@GetUser() company: Company) {
     return this.companiesService.deleteAccount(company.id);
+  }
+
+  @Get('usage')
+  @ApiOperation({ summary: 'Get API usage summary for last 30 days' })
+  getUsageSummary(@GetUser() company: Company) {
+    return this.companiesService.getApiUsageSummary(company.id);
+  }
+
+  @Get('usage/logs')
+  @ApiOperation({ summary: 'Get recent API usage logs' })
+  getUsageLogs(@GetUser() company: Company, @Query('limit') limit?: string) {
+    return this.companiesService.getApiUsageLogs(
+      company.id,
+      limit ? parseInt(limit, 10) : 100,
+    );
   }
 }

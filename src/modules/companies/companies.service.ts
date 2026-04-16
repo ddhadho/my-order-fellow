@@ -82,4 +82,55 @@ export class CompaniesService {
 
     return { message: 'Account deleted successfully' };
   }
+
+  async getApiUsageSummary(companyId: string) {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [total, byEndpoint, byDay] = await Promise.all([
+      this.prisma.apiUsageLog.count({
+        where: { companyId, createdAt: { gte: thirtyDaysAgo } },
+      }),
+      this.prisma.apiUsageLog.groupBy({
+        by: ['endpoint', 'method'],
+        where: { companyId, createdAt: { gte: thirtyDaysAgo } },
+        _count: true,
+        orderBy: { _count: { endpoint: 'desc' } },
+      }),
+      this.prisma.apiUsageLog.groupBy({
+        by: ['createdAt'],
+        where: { companyId, createdAt: { gte: thirtyDaysAgo } },
+        _count: true,
+      }),
+    ]);
+
+    return {
+      period: '30 days',
+      totalRequests: total,
+      byEndpoint: byEndpoint.map((e) => ({
+        endpoint: e.endpoint,
+        method: e.method,
+        count: e._count,
+      })),
+      dailyBreakdown: byDay.map((d) => ({
+        date: d.createdAt,
+        count: d._count,
+      })),
+    };
+  }
+
+  async getApiUsageLogs(companyId: string, limit = 100) {
+    return this.prisma.apiUsageLog.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        endpoint: true,
+        method: true,
+        statusCode: true,
+        createdAt: true,
+      },
+    });
+  }
 }

@@ -32,6 +32,7 @@ model Company {
   orders                   Order[]
   notificationPreference   NotificationPreference?
   webhookDeliveries        WebhookDelivery[]
+  apiUsageLogs             ApiUsageLog[]
 }
 
 model NotificationPreference {
@@ -155,4 +156,18 @@ model WebhookDelivery {
   @@index([companyId])
   @@index([status])
   @@index([nextRetryAt])
+}
+
+model ApiUsageLog {
+  id        String   @id @default(uuid())
+  companyId String
+  endpoint  String
+  method    String
+  statusCode Int
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([createdAt])
 }

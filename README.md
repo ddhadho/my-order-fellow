@@ -17,6 +17,7 @@ A SaaS platform that helps e-commerce companies provide real-time order tracking
 - [Tech Stack](#-tech-stack)
 - [Architecture](#-architecture)
 - [Getting Started](#-getting-started)
+- [Test Credentials](#-test-credentials)
 - [API Endpoints](#-api-endpoints)
 - [Usage Examples](#-usage-examples)
 - [Testing](#-testing)
@@ -185,6 +186,7 @@ WEBHOOK_SECRET_SALT=your-webhook-salt-change-this-min-32-chars
 THROTTLE_TTL=60
 THROTTLE_LIMIT=10
 ```
+
 ### Quick Test
 
 ```bash
@@ -199,6 +201,34 @@ curl http://localhost:3000/api/v1/auth/register \
 
 # Expected: 201 Created with companyId
 ```
+
+---
+
+## Test Credentials
+
+> ⚠️ **For development and evaluation purposes only.** Do not use these credentials in production.
+
+A pre-verified test account is available to explore the API without going through the full registration and KYC flow:
+
+| Field | Value |
+|-------|-------|
+| **Email** | `kamandashaban99@gmail.com` |
+| **Password** | `h;V3Y_GnS&H&aPa` |
+
+### Quick Login with Test Account
+
+```bash
+curl -X POST https://my-order-fellow.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "businessEmail": "kamandashaban99@gmail.com",
+    "password": "h;V3Y_GnS&H&aPa"
+  }'
+
+# Response: { "accessToken": "eyJhbG...", "company": { ... } }
+```
+
+Use the returned `accessToken` as a Bearer token for all authenticated endpoints.
 
 ---
 
@@ -628,6 +658,3 @@ npm run test
 
 ### Planned
 - SMS notifications
-- Dashboard frontend (Vue)
-
-
